@@ -10,6 +10,9 @@ import librosa
 import requests
 import revChatGPT
 import soundfile
+import sys
+import signal
+import threading
 
 import GPT.tune
 from utils.FlushingFileHandler import FlushingFileHandler
@@ -31,6 +34,11 @@ file_handler.setLevel(logging.INFO)
 console_logger.addHandler(file_handler)
 console_logger.addHandler(console_handler)
 
+def ctrlc_handler(signum, frame):
+    logging.info("Ctrl+C pressed. Exiting...")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, ctrlc_handler)
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -73,13 +81,13 @@ class Server():
         self.s.bind((self.host, self.port))
         self.tmp_recv_file = 'tmp/server_received.wav'
         self.tmp_proc_file = 'tmp/server_processed.wav'
+        self.character = args.character
 
         ## hard coded character map
         self.char_name = {
             'paimon': ['TTS/models/paimon6k.json', 'TTS/models/paimon6k_390k.pth', 'character_paimon', 1],
             'yunfei': ['TTS/models/yunfeimix2.json', 'TTS/models/yunfeimix2_53k.pth', 'character_yunfei', 1.1],
             'catmaid': ['TTS/models/catmix.json', 'TTS/models/catmix_107k.pth', 'character_catmaid', 1.2]
-
         }
 
         # PARAFORMER
@@ -101,8 +109,8 @@ class Server():
             logging.info(f"Server is listening on {self.host}:{self.port}...")
             self.conn, self.addr = self.s.accept()
             logging.info(f"Connected by {self.addr}")
-            self.conn.sendall(b'%s' % self.char_name[args.character][2].encode())
-            logging.info('char=%s' % self.char_name[args.character][2])
+            self.conn.sendall(b'%s' % self.char_name[self.character][2].encode())
+            logging.info('char=%s' % self.char_name[self.character][2])
             while True:
                 try:
                     file = self.__receive_file()
@@ -196,8 +204,7 @@ class Server():
 
         return text
 
-
-if __name__ == '__main__':
+def server_task():
     try:
         args = parse_args()
         s = Server(args)
@@ -205,4 +212,12 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(e.__str__())
         logging.error(traceback.format_exc())
-        raise e
+        raise e 
+
+if __name__ == '__main__':
+    server_thread = threading.Thread(target=server_task)
+    server_thread.daemon = True
+    server_thread.start()
+
+    while True:
+        time.sleep(1)
