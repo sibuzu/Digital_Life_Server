@@ -30,7 +30,7 @@ def get_text(text, hps):
 
 class TTService():
     def __init__(self, cfg, model, char, speed):
-        logging.info('Initializing TTS Service for %s...' % char)
+        logging.info(f'Initializing TTS Service for {char}, {model}...')
         self.hps = utils.get_hparams_from_file(cfg)
         self.speed = speed
         self.net_g = SynthesizerTrn(

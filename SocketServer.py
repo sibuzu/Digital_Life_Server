@@ -24,7 +24,8 @@ FORMAT = '%(asctime)s %(levelname)s %(message)s'
 console_handler = console_logger.handlers[0]
 console_handler.setFormatter(logging.Formatter(FORMAT))
 console_logger.setLevel(logging.INFO)
-file_handler = FlushingFileHandler("log.log", formatter=logging.Formatter(FORMAT))
+# file_handler = FlushingFileHandler("log.log", encoding='utf-8', formatter=logging.Formatter(FORMAT))
+file_handler = logging.FileHandler('log.log', encoding='utf-8')
 file_handler.setFormatter(logging.Formatter(FORMAT))
 file_handler.setLevel(logging.INFO)
 console_logger.addHandler(file_handler)
@@ -53,6 +54,7 @@ def parse_args():
     parser.add_argument("--character", type=str, nargs='?', required=True)
     parser.add_argument("--ip", type=str, nargs='?', required=False)
     parser.add_argument("--brainwash", type=str2bool, nargs='?', required=False)
+    parser.add_argument("--port", type=int, default=38434)
     return parser.parse_args()
 
 
@@ -63,7 +65,9 @@ class Server():
         self.conn = None
         logging.info('Initializing Server...')
         self.host = socket.gethostbyname(socket.gethostname())
-        self.port = 38438
+        self.host = "0.0.0.0"
+        self.port = args.port
+        logging.info(f"host={self.host}:{self.port}")
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 10240000)
         self.s.bind((self.host, self.port))
@@ -98,10 +102,11 @@ class Server():
             self.conn, self.addr = self.s.accept()
             logging.info(f"Connected by {self.addr}")
             self.conn.sendall(b'%s' % self.char_name[args.character][2].encode())
+            logging.info('char=%s' % self.char_name[args.character][2])
             while True:
                 try:
                     file = self.__receive_file()
-                    # print('file received: %s' % file)
+                    logging.info(f'file received: {len(file)}')
                     with open(self.tmp_recv_file, 'wb') as f:
                         f.write(file)
                         logging.info('WAV file received and saved.')
@@ -157,16 +162,16 @@ class Server():
         file_data = b''
         while True:
             data = self.conn.recv(1024)
-            # print(data)
             self.conn.send(b'sb')
             if data[-2:] == b'?!':
                 file_data += data[0:-2]
                 break
             if not data:
-                # logging.info('Waiting for WAV...')
+                logging.info('Waiting for WAV...')
                 continue
             file_data += data
 
+        print(f"receive len={len(data)}")
         return file_data
 
     def fill_size_wav(self):
