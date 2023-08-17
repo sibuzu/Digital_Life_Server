@@ -5,6 +5,8 @@ import time
 import logging
 import traceback
 from logging.handlers import TimedRotatingFileHandler
+import re
+import random
 
 import librosa
 import requests
@@ -120,9 +122,15 @@ class Server():
                         f.write(file)
                         logging.info('WAV file received and saved.')
                     ask_text = self.process_voice()
+                    emo = 0
                     if self.stream:
                         for sentence in self.chat_gpt.ask_stream(ask_text):
-                            self.send_voice(sentence)
+                            sentence, emo = self.get_emotion(sentence, emo)
+                            self.send_voice(sentence, emo)
+
+                        #TEST EMOTION
+                        # self.test_emotions()
+                        
                         self.notice_stream_end()
                         logging.info('Stream finished.')
                     else:
@@ -148,6 +156,45 @@ class Server():
                     logging.error(e.__str__())
                     logging.error(traceback.format_exc())
                     break
+
+    def get_emotion(self, input_string, emo):
+        emotions = {
+            "exciting": 0,
+            "happy": 0,
+            "afraid": 1,
+            "angry": 2,
+            "boring": 3,
+            "dispointed": 3,
+            "lost": 3,
+            "curious": 4,
+            "joking": 5
+        }
+
+        pattern = r"\[(\w+)\](.*)"
+        match = re.match(pattern, input_string)
+
+        if match:
+            emotion = match.group(1)
+            content = match.group(2)
+            if emotion in emotions:
+                return content, emotions[emotion]
+        return input_string, emo
+    
+    def test_emotions(self):
+        emo = 0
+        test_sentences = [
+            '[exciting]這是開心的句子',
+            '[afraid]這是害怕的句子',
+            '[angry]這是生氣的句子',
+            '[boring]這是無聊的句子',
+            '[curious]這是好奇的句子',
+            '[joking]這是開玩笑的句子',
+        ]
+        for i in range(60):
+            sentence = test_sentences[i%6]
+            sentence, emo = self.get_emotion(sentence, emo)
+            print("TEST:", sentence, emo)
+            self.send_voice(sentence, emo)
 
     def notice_stream_end(self):
         time.sleep(0.5)
@@ -181,7 +228,7 @@ class Server():
                 continue
             file_data += data
 
-        print(f"receive len={len(data)}")
+        logging.info(f"receive len={len(data)}")
         return file_data
 
     def fill_size_wav(self):
