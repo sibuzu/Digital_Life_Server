@@ -122,11 +122,18 @@ class Server():
                         f.write(file)
                         logging.info('WAV file received and saved.')
                     ask_text = self.process_voice()
+
+
                     emo = 0
                     if self.stream:
-                        for sentence in self.chat_gpt.ask_stream(ask_text):
-                            sentence, emo = self.get_emotion(sentence, emo)
-                            self.send_voice(sentence, emo)
+                        # check if 正常模式，字幕模式，除錯模式
+                        cmd_sentence = self.mode_command(ask_text)
+                        if cmd_sentence:
+                            self.send_voice(cmd_sentence, 0)
+                        else:
+                            for sentence in self.chat_gpt.ask_stream(ask_text):
+                                sentence, emo = self.get_emotion(sentence, emo)
+                                self.send_voice(sentence, emo)
 
                         #TEST EMOTION
                         # self.test_emotions()
@@ -196,6 +203,19 @@ class Server():
             print("TEST:", sentence, emo)
             self.send_voice(sentence, emo)
 
+    def mode_command(self, input_string):
+        pat_D = r"(启动|开始|进入)?(除错|出错)模式"
+        pat_C = r"(启动|开始|进入)?(字幕|文字)模式"
+        pat_N = r"(启动|开始|进入)?(正常|一般)模式"
+        if re.match(pat_D, input_string):
+            return "现在进入除错模式"
+        elif re.match(pat_C, input_string):
+            return "现在进入字幕模式"
+        elif re.match(pat_N, input_string):
+            return "现在进入正常模式"
+        else:
+            return ""
+
     def notice_stream_end(self):
         time.sleep(0.5)
         self.conn.sendall(b'stream_finished')
@@ -208,11 +228,16 @@ class Server():
             senti = senti_or
         else:
             senti = self.sentiment.infer(resp_text)
+
+        resp_text = resp_text[:127]
+        str_bdata = b'%s' % resp_text.encode('utf-16-le')
+        senddata += str_bdata
+        senddata += b'%c' % len(str_bdata)
         senddata += b'?!'
         senddata += b'%i' % senti
         self.conn.sendall(senddata)
         time.sleep(0.5)
-        logging.info('WAV SENT, size %i' % len(senddata))
+        logging.info(f'WAV SENT, {resp_text}, {senti}, size =  {len(resp_text)}, {len(str_bdata)}, {len(senddata)}')
 
     def __receive_file(self):
         file_data = b''
