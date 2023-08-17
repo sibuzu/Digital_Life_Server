@@ -82,6 +82,7 @@ class Server():
         self.tmp_recv_file = 'tmp/server_received.wav'
         self.tmp_proc_file = 'tmp/server_processed.wav'
         self.character = args.character
+        self.stream = args.stream
 
         ## hard coded character map
         self.char_name = {
@@ -119,7 +120,7 @@ class Server():
                         f.write(file)
                         logging.info('WAV file received and saved.')
                     ask_text = self.process_voice()
-                    if args.stream:
+                    if self.stream:
                         for sentence in self.chat_gpt.ask_stream(ask_text):
                             self.send_voice(sentence)
                         self.notice_stream_end()
@@ -175,7 +176,8 @@ class Server():
                 file_data += data[0:-2]
                 break
             if not data:
-                logging.info('Waiting for WAV...')
+                # logging.info('Waiting for WAV...')
+                time.sleep(0.1)
                 continue
             file_data += data
 
