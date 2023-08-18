@@ -6,7 +6,7 @@ import logging
 import traceback
 from logging.handlers import TimedRotatingFileHandler
 import re
-import random
+from opencc import OpenCC
 
 import librosa
 import requests
@@ -49,6 +49,11 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Unsupported value encountered.')
+
+def convert_simplified_to_traditional(input_string):
+    cc = OpenCC('s2t')  # Specify conversion from Simplified to Traditional
+    traditional_string = cc.convert(input_string)
+    return traditional_string
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -131,9 +136,14 @@ class Server():
                         if cmd_sentence:
                             self.send_voice(cmd_sentence, 0)
                         else:
+                            s = ask_text
                             for sentence in self.chat_gpt.ask_stream(ask_text):
                                 sentence, emo = self.get_emotion(sentence, emo)
-                                self.send_voice(sentence, emo)
+                                if s:
+                                    self.send_voice(sentence, emo, s + '<sp>' + sentence)
+                                    s = ''
+                                else:
+                                    self.send_voice(sentence, emo)
 
                         #TEST EMOTION
                         # self.test_emotions()
@@ -182,9 +192,10 @@ class Server():
 
         if match:
             emotion = match.group(1)
-            content = match.group(2)
+            input_string = match.group(2)
             if emotion in emotions:
-                return content, emotions[emotion]
+                emo = emotions[emotion]
+ 
         return input_string, emo
     
     def test_emotions(self):
@@ -220,7 +231,7 @@ class Server():
         time.sleep(0.5)
         self.conn.sendall(b'stream_finished')
 
-    def send_voice(self, resp_text, senti_or = None):
+    def send_voice(self, resp_text, senti_or = None, disp_text=None):
         self.tts.read_save(resp_text, self.tmp_proc_file, self.tts.hps.data.sampling_rate)
         with open(self.tmp_proc_file, 'rb') as f:
             senddata = f.read()
@@ -229,10 +240,14 @@ class Server():
         else:
             senti = self.sentiment.infer(resp_text)
 
-        resp_text = resp_text[:127]
-        str_bdata = b'%s' % resp_text.encode('utf-16-le')
+        if not disp_text:
+            disp_text = resp_text
+
+        disp_text = convert_simplified_to_traditional(disp_text)
+        str_bdata = b'%s' % disp_text.encode('utf-16-le')
+        n = len(str_bdata)
         senddata += str_bdata
-        senddata += b'%c' % len(str_bdata)
+        senddata += b'%c%c' % (n//256, n%256)
         senddata += b'?!'
         senddata += b'%i' % senti
         self.conn.sendall(senddata)
