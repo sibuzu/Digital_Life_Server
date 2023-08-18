@@ -1,7 +1,6 @@
 __pycache__
 /ASR/resources/models
 /TTS/models
-/SentimentEngine/models
 /tmp
 /run_server.bat
 *.log

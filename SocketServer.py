@@ -21,7 +21,6 @@ from utils.FlushingFileHandler import FlushingFileHandler
 from ASR import ASRService
 from GPT import GPTService
 from TTS import TTService
-from SentimentEngine import SentimentEngine
 
 console_logger = logging.getLogger()
 console_logger.setLevel(logging.INFO)
@@ -106,9 +105,6 @@ class Server():
 
         # TTS
         self.tts = TTService.TTService(*self.char_name[args.character])
-
-        # Sentiment Engine
-        self.sentiment = SentimentEngine.SentimentEngine('SentimentEngine/models/paimon_sentiment.onnx')
 
     def listen(self):
         # MAIN SERVER LOOP
@@ -231,14 +227,10 @@ class Server():
         time.sleep(0.5)
         self.conn.sendall(b'stream_finished')
 
-    def send_voice(self, resp_text, senti_or = None, disp_text=None):
+    def send_voice(self, resp_text, senti = 0, disp_text=None):
         self.tts.read_save(resp_text, self.tmp_proc_file, self.tts.hps.data.sampling_rate)
         with open(self.tmp_proc_file, 'rb') as f:
             senddata = f.read()
-        if senti_or:
-            senti = senti_or
-        else:
-            senti = self.sentiment.infer(resp_text)
 
         if not disp_text:
             disp_text = resp_text

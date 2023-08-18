@@ -40,7 +40,6 @@ datas.append(('venv\lib\site-packages\jieba','jieba'))
 datas.append(('ASR', 'ASR'))
 datas.append(('GPT\prompts_default', 'GPT\prompts_default'))
 datas.append(('tmp', 'tmp'))
-datas.append(('SentimentEngine\models\paimon_sentiment.onnx', 'SentimentEngine\models'))
 hiddenimports.extend(['tiktoken_ext.openai_public','tiktoken_ext'])
 
 
