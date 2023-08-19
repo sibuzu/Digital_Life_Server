@@ -5,16 +5,17 @@ import pyaudio
 
 from TTS.TTService import TTService
 
+text_ch_1 = '旅行者，今天是星期四，能否威我五十'
+text_en_1 = 'Travller, today is Thursday. How old are you?'
+text_jp_1 = '[JA]その通りです。車は頻繁に使うものですので、安全性も大切にしなければなりません[JA]'
 config_combo = [
-        ("TTS/models/paimon6k.json", "TTS/models/paimon6k_390k.pth"),
-        # ("TTS/models/momoi.json", "TTS/models/momoi.pth"),
+        ("TTS/models/paimon6k.json", "TTS/models/paimon6k_390k.pth", text_ch_1),
+        ("TTS/models/momoi.json", "TTS/models/momoi.pth", text_jp_1),
     ]
-for cfg, model in config_combo:
+for cfg, model, text in config_combo:
     a = TTService(cfg, model, 'test', 1)
     p = pyaudio.PyAudio()
-    audio = a.read('旅行者，今天是星期四，能否威我五十')
-    # audio = a.read('Travller, today is Thursday. How old are you?')
-    # audio = a.read('[JA]その通りです。車は頻繁に使うものですので、安全性も大切にしなければなりません[JA]')
+    audio = a.read(text)
     stream = p.open(format=pyaudio.paFloat32,
                     channels=1,
                     rate=a.hps.data.sampling_rate,
