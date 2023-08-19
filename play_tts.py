@@ -7,10 +7,15 @@ from TTS.TTService import TTService
 
 text_ch_1 = '旅行者，今天是星期四，能否威我五十'
 text_en_1 = 'Travller, today is Thursday. How old are you?'
+text_en_2 = 'A rainbow is a beautiful, colorful arch of light that can sometimes appear in the sky after it rains.'
 text_jp_1 = '[JA]その通りです。車は頻繁に使うものですので、安全性も大切にしなければなりません[JA]'
 config_combo = [
         ("TTS/models/paimon6k.json", "TTS/models/paimon6k_390k.pth", text_ch_1),
         ("TTS/models/momoi.json", "TTS/models/momoi.pth", text_jp_1),
+        ("TTS/models/ljs_base.json", "TTS/models/pretrained_ljs.pth", text_en_1),
+        ("TTS/models/ljs_base.json", "TTS/models/pretrained_ljs.pth", text_en_2),
+        ("TTS/models/vctk_base.json", "TTS/models/pretrained_vctk.pth", text_en_1),
+        ("TTS/models/vctk_base.json", "TTS/models/pretrained_vctk.pth", text_en_2),
     ]
 for cfg, model, text in config_combo:
     a = TTService(cfg, model, 'test', 1)
