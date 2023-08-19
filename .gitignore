@@ -5,3 +5,5 @@ __pycache__
 /run_server.bat
 *.log
 /run_direct.bat
+/pyopenjtalk
+output.wav

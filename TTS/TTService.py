@@ -13,7 +13,7 @@ import TTS.vits.utils as utils
 
 from TTS.vits.models import SynthesizerTrn
 from TTS.vits.text.symbols import symbols
-from TTS.vits.text import text_to_sequence
+from TTS.vits.text import text_to_sequence, create_symbol_id_map
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
@@ -33,8 +33,9 @@ class TTService():
         logging.info(f'Initializing TTS Service for {char}, {model}...')
         self.hps = utils.get_hparams_from_file(cfg)
         self.speed = speed
+        create_symbol_id_map(self.hps.symbols)
         self.net_g = SynthesizerTrn(
-            len(symbols),
+            len(self.hps.symbols),
             self.hps.data.filter_length // 2 + 1,
             self.hps.train.segment_size // self.hps.data.hop_length,
             **self.hps.model).cuda()
