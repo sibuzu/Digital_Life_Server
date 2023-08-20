@@ -24,3 +24,7 @@ if __name__ == '__main__':
     wav_path = 'ASR/test_wavs/0478_00017.wav'
     result = service.infer(wav_path)
     print(result)
+
+    wav_path = 'ASR/test_wavs/asr_example_zh.wav'
+    result = service.infer(wav_path)
+    print(result)
