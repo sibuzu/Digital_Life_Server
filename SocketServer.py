@@ -242,20 +242,20 @@ class Server():
         senddata += str_bdata
         senddata += b'%c%c' % (n//256, n%256)
         senddata += b'?!'
-        senddata += b'%i' % senti
+        senddata += b'%c' % senti
         self.conn.sendall(senddata)
         time.sleep(0.5)
         logging.info(f'WAV SENT, {resp_text}, {senti}, size =  {len(resp_text)}, {len(str_bdata)}, {len(senddata)}')
 
     def __receive_file(self):
         file_data = b''
-        lang = 0
+        mlang = 0
         while True:
             data = self.conn.recv(1024)
             self.conn.send(b'sb')
-            if data[-2:] == b'?!':
-                file_data += data[0:-2]
-                lang = 0
+            if data[-3:-1] == b'?!':
+                file_data += data[0:-3]
+                mlang = data[-1]
                 break
             if not data:
                 # logging.info('Waiting for WAV...')
@@ -264,7 +264,7 @@ class Server():
             file_data += data
 
         logging.info(f"receive len={len(data)}")
-        return lang, file_data
+        return mlang, file_data
 
     def fill_size_wav(self):
         with open(self.tmp_recv_file, "r+b") as f:
