@@ -2,9 +2,7 @@ __pycache__
 /ASR/resources/models
 /TTS/models
 /tmp
-/run_server.bat
 *.log
-/run_direct.bat
 /pyopenjtalk
 output.wav
 /TTS/vits
