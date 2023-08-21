@@ -117,13 +117,14 @@ class Server():
             logging.info('char=%s' % self.char_name[self.character][2])
             while True:
                 try:
-                    file = self.__receive_file()
+                    lang, file = self.__receive_file()
+                    assert lang >= 0 and lang <= 2, f'Invalid lang: {lang}'
+
                     logging.info(f'file received: {len(file)}')
                     with open(self.tmp_recv_file, 'wb') as f:
                         f.write(file)
                         logging.info('WAV file received and saved.')
-                    ask_text = self.process_voice()
-
+                    ask_text = self.process_voice(lang)
 
                     emo = 0
                     if self.stream:
@@ -248,11 +249,13 @@ class Server():
 
     def __receive_file(self):
         file_data = b''
+        lang = 0
         while True:
             data = self.conn.recv(1024)
             self.conn.send(b'sb')
             if data[-2:] == b'?!':
                 file_data += data[0:-2]
+                lang = 0
                 break
             if not data:
                 # logging.info('Waiting for WAV...')
@@ -261,7 +264,7 @@ class Server():
             file_data += data
 
         logging.info(f"receive len={len(data)}")
-        return file_data
+        return lang, file_data
 
     def fill_size_wav(self):
         with open(self.tmp_recv_file, "r+b") as f:
@@ -274,7 +277,7 @@ class Server():
             f.write((size - 28).to_bytes(4, byteorder='little'))
             f.flush()
 
-    def process_voice(self):
+    def process_voice(self, lang):
         # stereo to mono
         self.fill_size_wav()
         y, sr = librosa.load(self.tmp_recv_file, sr=None, mono=False)
