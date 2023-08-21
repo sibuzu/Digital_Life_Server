@@ -5,6 +5,15 @@ import pyaudio
 
 from TTS.TTService import TTService
 
+### momoi.pth 
+###   from https://huggingface.co/spaces/zomehwh/vits-models
+### pretrained_ljs.pth
+###   from https://drive.google.com/uc?id=1q86w74Ygw2hNzYP9cWkeClGT5X25PvBT
+###   config ljs_base.json from https://github.com/jaywalnut310/vits/tree/main/configs
+### pretrained_vctk.pth
+###   from https://drive.google.com/uc?id=11aHOlhnxzjpdWDpsz1vFDCzbeEfoIxru
+###   config vctk_base.json from https://github.com/jaywalnut310/vits/tree/main/configs
+
 text_ch_1 = '旅行者，今天是星期四，能否威我五十'
 text_en_1 = 'Travller, today is Thursday. How old are you?'
 text_en_2 = 'A rainbow is a beautiful, colorful arch of light that can sometimes appear in the sky after it rains.'

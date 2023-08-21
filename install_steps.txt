@@ -4,9 +4,18 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 pip install -r requirements.txt
 
-install espeak
-http://sourceforge.net/projects/espeak/files/espeak/espeak-1.48/setup_espeak-1.48.04.exe
-https://github.com/espeak-ng/espeak-ng/blob/master/docs/building.md#windows
+###########
+install pyopenjtalk
+這個不好搞，我試了 install CMake 還有 pip install cmake
+有從 github 抓 source code 也有用 pip install pyopenjtalk
+最後成功是(不知道為什麼)
+pip uninstall cmake (是uninstall)
+pip install pyopenjtalk
+
+
+###########
+install espeak (binary msi)
+https://github.com/espeak-ng/espeak-ng/releases/latest
 
 after installed
 conda env config vars set PHONEMIZER_ESPEAK_PATH="C:\Program Files\eSpeak NG"
