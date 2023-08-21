@@ -7,3 +7,4 @@ __pycache__
 /run_direct.bat
 /pyopenjtalk
 output.wav
+/TTS/vits
