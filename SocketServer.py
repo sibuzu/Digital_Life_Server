@@ -117,14 +117,15 @@ class Server():
             logging.info('char=%s' % self.char_name[self.character][2])
             while True:
                 try:
-                    lang, file = self.__receive_file()
-                    assert lang >= 0 and lang <= 2, f'Invalid lang: {lang}'
+                    file, voice_lang, actor_index = self.__receive_file()
+                    # assert voice_lang >= 0 and voice_lang <= 2, f'Invalid voice: {voice_lang}'
+                    # assert actor_index >= 0 and actor_index <= 2, f'Invalid actor: {actor_index}'
 
                     logging.info(f'file received: {len(file)}')
                     with open(self.tmp_recv_file, 'wb') as f:
                         f.write(file)
                         logging.info('WAV file received and saved.')
-                    ask_text = self.process_voice(lang)
+                    ask_text = self.process_voice(voice_lang)
 
                     emo = 0
                     if self.stream:
@@ -249,13 +250,15 @@ class Server():
 
     def __receive_file(self):
         file_data = b''
-        mlang = 0
+        voice = 0
+        actor = 0
         while True:
             data = self.conn.recv(1024)
             self.conn.send(b'sb')
             if data[-3:-1] == b'?!':
                 file_data += data[0:-3]
-                mlang = data[-1]
+                voice = data[-1] // 10
+                actor = data[-1] % 10
                 break
             if not data:
                 # logging.info('Waiting for WAV...')
@@ -263,8 +266,8 @@ class Server():
                 continue
             file_data += data
 
-        logging.info(f"receive len={len(data)}")
-        return mlang, file_data
+        logging.info(f"receive voice={voice}, actor={actor}, len={len(data)}")
+        return file_data, voice, actor
 
     def fill_size_wav(self):
         with open(self.tmp_recv_file, "r+b") as f:
@@ -277,7 +280,7 @@ class Server():
             f.write((size - 28).to_bytes(4, byteorder='little'))
             f.flush()
 
-    def process_voice(self, lang):
+    def process_voice(self, voice_lang):
         # stereo to mono
         self.fill_size_wav()
         y, sr = librosa.load(self.tmp_recv_file, sr=None, mono=False)
