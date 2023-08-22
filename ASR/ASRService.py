@@ -25,15 +25,13 @@ class ASRService():
         return str(result)
 
 if __name__ == '__main__':
-    config_path = 'ASR/resources/config.yaml'
-
-    service = ASRService(config_path)
+    service = ASRService()
 
     # print(wav_path)
     wav_path = 'ASR/test_wavs/0478_00017.wav'
-    result = service.infer(wav_path)
+    result = service.infer(wav_path, 0)
     print(result)
 
     wav_path = 'ASR/test_wavs/asr_example_zh.wav'
-    result = service.infer(wav_path)
+    result = service.infer(wav_path, 0)
     print(result)

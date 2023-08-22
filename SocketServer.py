@@ -98,7 +98,7 @@ class Server():
         }
 
         # PARAFORMER
-        self.paraformer = ASRService.ASRService('./ASR/resources/config.yaml')
+        self.asr = ASRService.ASRService()
 
         # CHAT GPT
         self.chat_gpt = GPTService.GPTService(args)
@@ -118,8 +118,8 @@ class Server():
             while True:
                 try:
                     file, voice_lang, actor_index = self.__receive_file()
-                    # assert voice_lang >= 0 and voice_lang <= 2, f'Invalid voice: {voice_lang}'
-                    # assert actor_index >= 0 and actor_index <= 2, f'Invalid actor: {actor_index}'
+                    assert voice_lang >= 0 and voice_lang <= 2, f'Invalid voice: {voice_lang}'
+                    assert actor_index >= 0 and actor_index <= 2, f'Invalid actor: {actor_index}'
 
                     logging.info(f'file received: {len(file)}')
                     with open(self.tmp_recv_file, 'wb') as f:
@@ -266,7 +266,7 @@ class Server():
                 continue
             file_data += data
 
-        logging.info(f"receive voice={voice}, actor={actor}, len={len(data)}")
+        logging.info(f"receive voice={voice}, actor={actor}, len={len(file_data)}")
         return file_data, voice, actor
 
     def fill_size_wav(self):
@@ -287,7 +287,7 @@ class Server():
         y_mono = librosa.to_mono(y)
         y_mono = librosa.resample(y_mono, orig_sr=sr, target_sr=16000)
         soundfile.write(self.tmp_recv_file, y_mono, 16000)
-        text = self.paraformer.infer(self.tmp_recv_file)
+        text = self.asr.infer(self.tmp_recv_file, voice_lang)
 
         return text
 
