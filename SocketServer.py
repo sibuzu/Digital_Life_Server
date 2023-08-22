@@ -56,7 +56,6 @@ def convert_simplified_to_traditional(input_string):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--chatVer", type=int, nargs='?', required=True)
     parser.add_argument("--APIKey", type=str, nargs='?', required=False)
     parser.add_argument("--email", type=str, nargs='?', required=False)
     parser.add_argument("--password", type=str, nargs='?', required=False)
@@ -67,7 +66,6 @@ def parse_args():
     parser.add_argument("--stream", type=str2bool, nargs='?', required=True)
     parser.add_argument("--character", type=str, nargs='?', required=True)
     parser.add_argument("--ip", type=str, nargs='?', required=False)
-    parser.add_argument("--brainwash", type=str2bool, nargs='?', required=False)
     parser.add_argument("--port", type=int, default=38434)
     return parser.parse_args()
 

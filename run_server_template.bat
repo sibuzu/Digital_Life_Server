@@ -4,4 +4,4 @@ set APIKEY=<CHAPGPT_API_KEY>
 set CHARNAME=paimon
 set MODEL=gpt-3.5-turbo
 set PORT=38438
-%PYTHON% SocketServer.py --APIKey %APIKEY% --model %MODEL% --character %CHARNAME% --port %PORT% --chatVer 3 --brainwash False --stream True 
+%PYTHON% SocketServer.py --APIKey %APIKEY% --model %MODEL% --character %CHARNAME% --port %PORT% --stream True 
