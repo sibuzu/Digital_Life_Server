@@ -1,19 +1,28 @@
 import logging
 import time
 
-from ASR.rapid_paraformer import RapidParaformer
-
+# ASR
+from modelscope.pipelines import pipeline
+from modelscope.utils.constant import Tasks
 
 class ASRService():
-    def __init__(self, config_path):
+    def __init__(self):
         logging.info('Initializing ASR Service...')
-        self.paraformer = RapidParaformer(config_path)
+        # PARAFORMER
+        models = [
+            '../models/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch',
+            '../models/speech_paraformer_asr-en-16k-vocab4199-pytorch',
+            '../models/speech_UniASR_asr_2pass-ja-16k-common-vocab93-tensorflow1-offline',
+        ]
+        self.pipes = [pipeline(task=Tasks.auto_speech_recognition, model=model) 
+                      for model in models]
 
-    def infer(self, wav_path):
+    def infer(self, wav_path, voice_lang):
         stime = time.time()
-        result = self.paraformer(wav_path)
+        assert voice_lang >= 0 and voice_lang < len(self.pipes), f'Invalud voice lang {voice_lang}'
+        result = self.pipes[voice_lang](audio_in=wav_path)
         logging.info('ASR Result: %s. time used %.2f.' % (result, time.time() - stime))
-        return result[0]
+        return str(result)
 
 if __name__ == '__main__':
     config_path = 'ASR/resources/config.yaml'
