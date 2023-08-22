@@ -19,15 +19,15 @@ text_en_1 = 'Travller, today is Thursday. How old are you?'
 text_en_2 = 'A rainbow is a beautiful, colorful arch of light that can sometimes appear in the sky after it rains.'
 text_jp_1 = '[JA]その通りです。車は頻繁に使うものですので、安全性も大切にしなければなりません[JA]'
 config_combo = [
-        ("TTS/models/paimon6k.json", "TTS/models/paimon6k_390k.pth", text_ch_1),
-        ("TTS/models/momoi.json", "TTS/models/momoi.pth", text_jp_1),
-        ("TTS/models/ljs_base.json", "TTS/models/pretrained_ljs.pth", text_en_1),
-        ("TTS/models/ljs_base.json", "TTS/models/pretrained_ljs.pth", text_en_2),
-        ("TTS/models/vctk_base.json", "TTS/models/pretrained_vctk.pth", text_en_1),
-        ("TTS/models/vctk_base.json", "TTS/models/pretrained_vctk.pth", text_en_2),
+        (0, text_ch_1),
+        (2, text_jp_1),
+        (1, text_en_1),
+        (1, text_en_2),
     ]
-for cfg, model, text in config_combo:
-    a = TTService(cfg, model, 'test', 1)
+
+tts_service = TTService()
+for actor, text in config_combo:
+    a = tts_service.get_tts(actor)
     p = pyaudio.PyAudio()
     audio = a.read(text)
     stream = p.open(format=pyaudio.paFloat32,

@@ -22,6 +22,10 @@ from ASR import ASRService
 from GPT import GPTService
 from TTS import TTService
 
+import nltk
+nltk.download('punkt')  # Download the punkt tokenizer models
+from nltk.tokenize import sent_tokenize
+
 console_logger = logging.getLogger()
 console_logger.setLevel(logging.INFO)
 FORMAT = '%(asctime)s %(levelname)s %(message)s'
@@ -56,17 +60,15 @@ def convert_simplified_to_traditional(input_string):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--APIKey", type=str, nargs='?', required=False)
     parser.add_argument("--email", type=str, nargs='?', required=False)
     parser.add_argument("--password", type=str, nargs='?', required=False)
     parser.add_argument("--accessToken", type=str, nargs='?', required=False)
     parser.add_argument("--proxy", type=str, nargs='?', required=False)
-    parser.add_argument("--paid", type=str2bool, nargs='?', required=False)
     parser.add_argument("--model", type=str, nargs='?', required=False)
-    parser.add_argument("--stream", type=str2bool, nargs='?', required=True)
     parser.add_argument("--character", type=str, nargs='?', required=True)
     parser.add_argument("--ip", type=str, nargs='?', required=False)
     parser.add_argument("--port", type=int, default=38434)
+    parser.add_argument("--postInit", type=str2bool, nargs='?', required=False)
     return parser.parse_args()
 
 
@@ -86,23 +88,18 @@ class Server():
         self.tmp_recv_file = 'tmp/server_received.wav'
         self.tmp_proc_file = 'tmp/server_processed.wav'
         self.character = args.character
-        self.stream = args.stream
-
-        ## hard coded character map
-        self.char_name = {
-            'paimon': ['TTS/models/paimon6k.json', 'TTS/models/paimon6k_390k.pth', 'character_paimon', 1],
-            'yunfei': ['TTS/models/yunfeimix2.json', 'TTS/models/yunfeimix2_53k.pth', 'character_yunfei', 1.1],
-            'catmaid': ['TTS/models/catmix.json', 'TTS/models/catmix_107k.pth', 'character_catmaid', 1.2]
-        }
+        self.post_init = args.postInit
+     
+        logging.info(f"post_init = {self.post_init}")
 
         # PARAFORMER
-        self.asr = ASRService.ASRService()
+        self.asr_service = ASRService.ASRService(self.post_init)
 
         # CHAT GPT
-        self.chat_gpt = GPTService.GPTService(args)
+        self.gpt_service = GPTService.GPTService()
 
         # TTS
-        self.tts = TTService.TTService(*self.char_name[args.character])
+        self.tts_service = TTService.TTService(self.post_init)
 
     def listen(self):
         # MAIN SERVER LOOP
@@ -111,45 +108,40 @@ class Server():
             logging.info(f"Server is listening on {self.host}:{self.port}...")
             self.conn, self.addr = self.s.accept()
             logging.info(f"Connected by {self.addr}")
-            self.conn.sendall(b'%s' % self.char_name[self.character][2].encode())
-            logging.info('char=%s' % self.char_name[self.character][2])
+
+            char_name = 'character_paimon'
+            self.conn.sendall(b'%s' % char_name.encode())
+            logging.info('char=%s' % char_name)
+
+            # character = 'character_paimon'
+            # self.conn.sendall(b'%s' % character.encode())
+            # logging.info('char=%s' % character)
+            
             while True:
                 try:
-                    file, voice_lang, actor_index = self.__receive_file()
+                    file, voice_lang, actor = self.__receive_file()
                     assert voice_lang >= 0 and voice_lang <= 2, f'Invalid voice: {voice_lang}'
-                    assert actor_index >= 0 and actor_index <= 2, f'Invalid actor: {actor_index}'
+                    assert actor >= 0 and actor <= 2, f'Invalid actor: {actor}'
 
                     logging.info(f'file received: {len(file)}')
                     with open(self.tmp_recv_file, 'wb') as f:
                         f.write(file)
                         logging.info('WAV file received and saved.')
                     ask_text = self.process_voice(voice_lang)
-
-                    emo = 0
-                    if self.stream:
-                        # check if 正常模式，字幕模式，除錯模式
-                        cmd_sentence = self.mode_command(ask_text)
-                        if cmd_sentence:
-                            self.send_voice(cmd_sentence, 0)
-                        else:
-                            s = ask_text
-                            for sentence in self.chat_gpt.ask_stream(ask_text):
-                                sentence, emo = self.get_emotion(sentence, emo)
-                                if s:
-                                    self.send_voice(sentence, emo, s + '<sp>' + sentence)
-                                    s = ''
-                                else:
-                                    self.send_voice(sentence, emo)
-
-                        #TEST EMOTION
-                        # self.test_emotions()
                         
-                        self.notice_stream_end()
-                        logging.info('Stream finished.')
-                    else:
-                        resp_text = self.chat_gpt.ask(ask_text)
-                        self.send_voice(resp_text)
-                        self.notice_stream_end()
+                    emo = 0
+                    chatbot = self.gpt_service.get_bot(actor)
+                    for sentence in chatbot.ask_stream(ask_text):
+                        sentence, emo = self.get_emotion(sentence, emo)
+                        self.send_voice(actor, sentence, emo, ask_text)
+                        ask_text = ''
+
+                    #TEST EMOTION
+                    # self.test_emotions()
+                    
+                    self.notice_stream_end()
+                    logging.info('Stream finished.')
+
                 except revChatGPT.typings.APIConnectionError as e:
                     logging.error(e.__str__())
                     logging.info('API rate limit exceeded, sending: %s' % GPT.tune.exceed_reply)
@@ -227,16 +219,24 @@ class Server():
         time.sleep(0.5)
         self.conn.sendall(b'stream_finished')
 
-    def send_voice(self, resp_text, senti = 0, disp_text=None):
-        self.tts.read_save(resp_text, self.tmp_proc_file, self.tts.hps.data.sampling_rate)
+    def send_voice(self, actor, resp_text, senti = 0, ask_text=None):
+        tts = self.tts_service.get_tts(actor)
+        tts.read_save(resp_text, self.tmp_proc_file)
+
         with open(self.tmp_proc_file, 'rb') as f:
             senddata = f.read()
 
-        if not disp_text:
-            disp_text = resp_text
-
-        disp_text = convert_simplified_to_traditional(disp_text)
-        str_bdata = b'%s' % disp_text.encode('utf-16-le')
+        if actor == 0:
+            resp_text = convert_simplified_to_traditional(resp_text)
+            if ask_text:
+                ask_text = convert_simplified_to_traditional(ask_text)
+        
+        if actor==1: # english
+            resp_text = self.split_sentences(resp_text.strip())
+        
+        if ask_text:
+            resp_text = ask_text + '<sp>' + resp_text  
+        str_bdata = b'%s' % resp_text.encode('utf-16-le')
         n = len(str_bdata)
         senddata += str_bdata
         senddata += b'%c%c' % (n//256, n%256)
@@ -245,6 +245,10 @@ class Server():
         self.conn.sendall(senddata)
         time.sleep(0.5)
         logging.info(f'WAV SENT, {resp_text}, {senti}, size =  {len(resp_text)}, {len(str_bdata)}, {len(senddata)}')
+
+    def split_sentences(self, paragraph):
+        sents = sent_tokenize(paragraph)
+        return '\n'.join(sents[::-1])
 
     def __receive_file(self):
         file_data = b''
@@ -285,7 +289,7 @@ class Server():
         y_mono = librosa.to_mono(y)
         y_mono = librosa.resample(y_mono, orig_sr=sr, target_sr=16000)
         soundfile.write(self.tmp_recv_file, y_mono, 16000)
-        text = self.asr.infer(self.tmp_recv_file, voice_lang)
+        text = self.asr_service.infer(voice_lang, self.tmp_recv_file)
 
         return text
 
