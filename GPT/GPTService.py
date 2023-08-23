@@ -42,8 +42,9 @@ class GPTBot():
             yield complete_text.strip()
 
     def retune(self):
-        logging.info(f'Retune: {self.tune}')
-        self.engine.ask(self.tune, role="system")
+        # logging.info(f'Retune: {self.tune}')
+        # self.engine.ask(self.tune, role="system")
+        pass
 
 class GPTService():
     def __init__(self):

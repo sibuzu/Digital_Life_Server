@@ -220,7 +220,7 @@ class Server():
         self.conn.sendall(b'stream_finished')
 
     def send_voice(self, actor, resp_text, senti = 0, ask_text=None):
-        tts = self.tts_service.get_tts(actor)
+        tts, actor = self.tts_service.get_tts_by_text(resp_text)
         tts.read_save(resp_text, self.tmp_proc_file)
 
         with open(self.tmp_proc_file, 'rb') as f:

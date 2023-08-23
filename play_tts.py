@@ -17,7 +17,7 @@ from TTS.TTService import TTService
 text_ch_1 = '旅行者，今天是星期四，能否威我五十'
 text_en_1 = 'Travller, today is Thursday. How old are you?'
 text_en_2 = 'A rainbow is a beautiful, colorful arch of light that can sometimes appear in the sky after it rains.'
-text_jp_1 = '[JA]その通りです。車は頻繁に使うものですので、安全性も大切にしなければなりません[JA]'
+text_jp_1 = 'その通りです。車は頻繁に使うものですので、安全性も大切にしなければなりません'
 config_combo = [
         (0, text_ch_1),
         (2, text_jp_1),
@@ -27,12 +27,13 @@ config_combo = [
 
 tts_service = TTService()
 for actor, text in config_combo:
-    a = tts_service.get_tts(actor)
+    tts, actor = tts_service.get_tts_by_text(text)
+    print(f"Actor deftected by text: {actor}")
     p = pyaudio.PyAudio()
-    audio = a.read(text)
+    audio = tts.read(text)
     stream = p.open(format=pyaudio.paFloat32,
                     channels=1,
-                    rate=a.hps.data.sampling_rate,
+                    rate=tts.hps.data.sampling_rate,
                     output=True
                     )
     data = audio.astype(np.float32).tobytes()
@@ -43,7 +44,7 @@ for actor, text in config_combo:
     # Set the audio properties
     num_channels = 1
     sample_width = 2  # Assuming 16-bit audio
-    frame_rate = a.hps.data.sampling_rate
+    frame_rate = tts.hps.data.sampling_rate
 
     # Convert audio data to 16-bit integers
     audio_int16 = (audio * np.iinfo(np.int16).max).astype(np.int16)

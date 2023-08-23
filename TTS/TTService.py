@@ -1,5 +1,6 @@
 import sys
 import time
+import re
 
 sys.path.append('TTS/vits')
 
@@ -70,6 +71,11 @@ class TTService():
             for i in range(len(self.tts)):
                 _ = self.get_tts(i)
 
+        # Check if the text contains characters commonly used in Chinese, English, or Japanese scripts
+        self.chinese_chars = re.compile(r'[\u4e00-\u9fff]')
+        self.japanese_chars = re.compile(r'[\u3040-\u30FF\u31F0-\u31FF\uFF65-\uFF9F]')
+        self.english_chars = re.compile(r'[A-Za-z]')
+
     def get_tts(self, actor):
         assert actor>=0 and actor<len(self.tts), f"Invalid actor: {actor}"
 
@@ -94,6 +100,15 @@ class TTService():
         
         return self.tts[actor]
     
+    def get_tts_by_text(self, text):
+        if self.japanese_chars.search(text):
+            return self.get_tts(2), 2
+        elif self.chinese_chars.search(text):
+            return self.get_tts(0), 0
+        else:
+            return self.get_tts(1), 1
+
+        
 
 
 
