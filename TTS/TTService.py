@@ -13,7 +13,6 @@ import TTS.vits.commons as commons
 import TTS.vits.utils as utils
 
 from TTS.vits.models import SynthesizerTrn
-from TTS.vits.text.symbols import symbols
 from TTS.vits.text import text_to_sequence, create_symbol_id_map
 
 import logging
@@ -63,7 +62,7 @@ class TTService():
         self.cfgs = [
             ['TTS/models/paimon6k.json', 'TTS/models/paimon6k_390k.pth', 'paimon', 1.2, ''],
             ['TTS/models/ljs_base.json', 'TTS/models/pretrained_ljs.pth', 'ljs_base', 1, ''],
-            ['TTS/models/momoi.json', 'TTS/models/momoi.pth', 'momoi', 1, '[JA]']
+            ['TTS/models/momoi.json', 'TTS/models/ameth.pth', 'momoi', 1, '[JA]']
         ]
 
         self.tts = [None] * len(self.cfgs)
@@ -107,8 +106,3 @@ class TTService():
             return self.get_tts(0), 0
         else:
             return self.get_tts(1), 1
-
-        
-
-
-
